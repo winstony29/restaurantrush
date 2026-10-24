@@ -16,7 +16,7 @@ public class Game {
     private final Queue<Customer> waitingQueue = new ArrayDeque<>();
     private final List<Customer> customers = new ArrayList<>();
     private final List<Order> orders = new ArrayList<>();
-    private Menu menu;
+    private final Menu menu;
 
     private final Waiter waiter = new Waiter();
     private final Chef chef = new Chef();
@@ -29,6 +29,13 @@ public class Game {
     public Game(RestaurantCLI cli) {
         this.cli = cli;
         // tables, menu
+        tables.add(new Table(1));
+        tables.add(new Table(2));
+        // order matters, customers pick by index
+        menu = new Menu(List.of(
+                new MenuItem("Salad", 900, 1),
+                new MenuItem("Burger", 1500, 1),
+                new MenuItem("Pasta", 1800, 2)));
     }
 
     public void runGame() {
@@ -37,7 +44,15 @@ public class Game {
     public void runTurn() {
     }
 
+    // ids 1..6 in arrival order
     private void processArrival() {
+        for (int t : arrivalTurns) {
+            if (t == turn) {
+                Customer c = new Customer(customers.size() + 1);
+                customers.add(c);
+                waitingQueue.add(c);
+            }
+        }
     }
 
     private void applyManagerChoices() {
