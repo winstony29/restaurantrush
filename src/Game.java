@@ -118,7 +118,32 @@ public class Game {
                 .orElse(null);
     }
 
+    // anyone not yet served loses satisfaction, at 0 they leave without paying
     private void processWaitingAndAbandonment() {
+        for (Customer c : customers) {
+            if (isWaitingForService(c)) {
+                c.loseSatisfactionForWaiting();
+                if (c.hasGivenUp()) {
+                    abandon(c);
+                }
+            }
+        }
+    }
+
+    private boolean isWaitingForService(Customer c) {
+        CustomerStatus s = c.getStatus();
+        return s == CustomerStatus.WAITING || s == CustomerStatus.SEATED || s == CustomerStatus.ORDERED;
+    }
+
+    private void abandon(Customer c) {
+        c.leave();
+        waitingQueue.remove(c);
+        if (c.getOrder() != null) {
+            c.getOrder().cancel();
+        }
+        if (c.getTable() != null) {
+            c.getTable().clear();
+        }
     }
 
     public boolean isOver() {
