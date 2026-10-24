@@ -55,7 +55,44 @@ public class Game {
         }
     }
 
+    // waiter before chef, a rejected choice is asked again without using up the task
     private void applyManagerChoices() {
+        while (true) {
+            try {
+                applyWaiterChoice(cli.readWaiterChoice(this));
+                break;
+            } catch (IllegalMoveException e) {
+                cli.displayError(e.getMessage());
+            }
+        }
+        while (true) {
+            try {
+                applyChefChoice(cli.readChefChoice(this));
+                break;
+            } catch (IllegalMoveException e) {
+                cli.displayError(e.getMessage());
+            }
+        }
+    }
+
+    private void applyWaiterChoice(WaiterChoice choice) {
+        Customer c = choice.customer();
+        switch (choice.kind()) {
+            case SEAT -> {
+                waiter.seat(c, choice.table());
+                waitingQueue.remove(c);
+            }
+            case TAKE_ORDER -> orders.add(waiter.takeOrder(c, menu));
+            case SERVE -> waiter.serve(c == null ? null : c.getOrder(), turn);
+            case WAIT -> { }
+        }
+    }
+
+    // null order means wait
+    private void applyChefChoice(ChefChoice choice) {
+        if (choice.order() != null) {
+            chef.cook(choice.order());
+        }
     }
 
     private void processEatingAndPayment() {
