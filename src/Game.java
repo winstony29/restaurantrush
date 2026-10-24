@@ -1,5 +1,6 @@
 import java.util.ArrayDeque;
 import java.util.ArrayList;
+import java.util.Comparator;
 import java.util.List;
 import java.util.OptionalDouble;
 import java.util.Queue;
@@ -95,11 +96,26 @@ public class Game {
         }
     }
 
+    // served on an earlier turn finishes eating, then the cashier takes one payment
     private void processEatingAndPayment() {
+        for (Customer c : customers) {
+            if (c.getStatus() == CustomerStatus.SERVED && c.getServedTurn() < turn) {
+                c.markReadyToPay(turn);
+            }
+        }
+        Customer payer = nextCustomerToPay();
+        if (payer != null) {
+            revenueCents += cashier.collect(payer);
+            paidSatisfactions.add(payer.getSatisfaction());
+        }
     }
 
+    // oldest ready to pay before this turn, tie-break by id
     private Customer nextCustomerToPay() {
-        return null;
+        return customers.stream()
+                .filter(c -> c.getStatus() == CustomerStatus.READY_TO_PAY && c.getReadyToPayTurn() < turn)
+                .min(Comparator.comparingInt(Customer::getReadyToPayTurn).thenComparingInt(Customer::getId))
+                .orElse(null);
     }
 
     private void processWaitingAndAbandonment() {
