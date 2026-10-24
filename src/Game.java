@@ -4,7 +4,7 @@ import java.util.List;
 import java.util.OptionalDouble;
 import java.util.Queue;
 
-/** Turn controller: sequences each turn and keeps the score. Holds no printing or parsing. */
+// Turn controller, sequences the turns and keeps score only, no output.
 public class Game {
     private final RestaurantCLI cli;
 
@@ -28,54 +28,43 @@ public class Game {
 
     public Game(RestaurantCLI cli) {
         this.cli = cli;
-        // step 2: tables, menu
+        // tables, menu
     }
 
     public void runGame() {
-        // step 7
     }
 
     public void runTurn() {
-        // step 7
     }
 
-    // step 2
     private void processArrival() {
     }
 
-    // step 3
     private void applyManagerChoices() {
     }
 
-    // step 4
     private void processEatingAndPayment() {
     }
 
-    // step 4
     private Customer nextCustomerToPay() {
         return null;
     }
 
-    // step 5
     private void processWaitingAndAbandonment() {
     }
 
-    // step 6
     public boolean isOver() {
         return false;
     }
 
-    // step 6
     public boolean isVictory() {
         return false;
     }
 
-    // step 6
     public OptionalDouble averageSatisfaction() {
         return OptionalDouble.empty();
     }
 
-    // step 6: read-only getters for the CLI
     public int getRevenueCents() { return revenueCents; }
     public int getTurn() { return turn; }
     public int getMaxTurns() { return maxTurns; }
