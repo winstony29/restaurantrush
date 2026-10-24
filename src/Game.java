@@ -39,10 +39,24 @@ public class Game {
                 new MenuItem("Pasta", 1800, 2)));
     }
 
+    // always all 18 turns, no early end
     public void runGame() {
+        while (!isOver()) {
+            runTurn();
+        }
+        cli.displayResult(this);
     }
 
+    // display after arrival so the manager sees who just came in
     public void runTurn() {
+        turn++;
+        staff.forEach(Staff::resetTurn);
+        processArrival();
+        cli.displayTurnStart(this);
+        applyManagerChoices();
+        processEatingAndPayment();
+        processWaitingAndAbandonment();
+        cli.displayTurnEnd(this);
     }
 
     // ids 1..6 in arrival order
