@@ -147,25 +147,55 @@ public class Game {
     }
 
     public boolean isOver() {
-        return false;
+        return turn >= maxTurns;
     }
 
+    // at least 4 paid, $45.00 revenue, average satisfaction 60
     public boolean isVictory() {
-        return false;
+        return paidSatisfactions.size() >= 4 && revenueCents >= 4500 && averageSatisfaction().orElse(0) >= 60;
     }
 
+    // satisfaction recorded at payment, empty if nobody has paid
     public OptionalDouble averageSatisfaction() {
-        return OptionalDouble.empty();
+        return paidSatisfactions.stream().mapToInt(Integer::intValue).average();
     }
 
     public int getRevenueCents() { return revenueCents; }
     public int getTurn() { return turn; }
     public int getMaxTurns() { return maxTurns; }
-    public List<Customer> getWaitingQueue() { return null; }
-    public List<Table> getTables() { return null; }
-    public List<Customer> getCustomers() { return null; }
-    public List<Order> getOrders() { return null; }
+    public List<Customer> getWaitingQueue() { return List.copyOf(waitingQueue); }
+    public List<Table> getTables() { return List.copyOf(tables); }
+    public List<Customer> getCustomers() { return List.copyOf(customers); }
+    public List<Order> getOrders() { return List.copyOf(orders); }
     public Menu getMenu() { return menu; }
-    public int getServedCount() { return 0; }
-    public int getUnhappyDepartures() { return 0; }
+    public int getPaidCount() { return paidSatisfactions.size(); }
+
+    // served means the dish reached the table, paid or not
+    public int getServedCount() {
+        return countCustomers(CustomerStatus.SERVED) + countCustomers(CustomerStatus.READY_TO_PAY)
+                + countCustomers(CustomerStatus.PAID);
+    }
+
+    public int getUnhappyDepartures() { return countCustomers(CustomerStatus.LEFT); }
+
+    private int countCustomers(CustomerStatus s) {
+        return (int) customers.stream().filter(c -> c.getStatus() == s).count();
+    }
+
+    // available tasks for the display, the staff still do the real checks
+    public List<Table> getFreeTables() {
+        return tables.stream().filter(Table::isFree).toList();
+    }
+
+    public List<Customer> getCustomersToOrder() {
+        return customers.stream().filter(c -> c.getStatus() == CustomerStatus.SEATED).toList();
+    }
+
+    public List<Order> getOrdersToServe() {
+        return orders.stream().filter(o -> o.getStatus() == OrderStatus.READY).toList();
+    }
+
+    public List<Order> getOrdersToCook() {
+        return orders.stream().filter(o -> o.getStatus() == OrderStatus.TAKEN).toList();
+    }
 }
