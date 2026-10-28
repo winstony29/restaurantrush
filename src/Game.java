@@ -47,8 +47,12 @@ public class Game {
         cli.displayResult(this);
     }
 
+    // refuse to run past the last turn, same shape as the staff guards
     // display after arrival so the manager sees who just came in
     public void runTurn() {
+        if (isOver()) {
+            throw new IllegalStateException("Game is over after turn " + maxTurns);
+        }
         turn++;
         staff.forEach(Staff::resetTurn);
         processArrival();
