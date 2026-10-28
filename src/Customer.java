@@ -38,7 +38,7 @@ public class Customer {
 
     public void seatAt(Table t) {
         requireStatus(CustomerStatus.WAITING, "be seated");
-        if (t == null || !t.isFree()) {
+        if (t == null) {
             throw new IllegalMoveException("Cannot seat customer: table is unavailable.");
         }
         table = t;
@@ -100,4 +100,5 @@ public class Customer {
     public Table getTable() { return table; }
     public Order getOrder() { return order; }
     public int getReadyToPayTurn() { return readyToPayTurn; }
+    public int getServedTurn() { return servedTurn; }
 }
