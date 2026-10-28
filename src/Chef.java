@@ -1,4 +1,3 @@
-package restaurantrush;
 //Chef subclass
 public class Chef extends Staff {
     //reuires order object implemented later

@@ -1,5 +1,3 @@
-package restaurantrush;
-
 //Cashier subclass
 public class Cashier extends Staff {
 
@@ -34,9 +32,17 @@ public class Cashier extends Staff {
         // Calculate the bill
         int bill = order.billCents();
 
+        // Save the table reference before updating customer status
+        Table table = c.getTable();
+
         // Update order and customer statuses
         order.markPaid();
         c.markPaid();
+
+        // Free the table after successful payment (changed after pull request comment)
+        if (table != null) {
+            table.clear();
+        }
 
         // Mark Cashier as having acted
         markActed();

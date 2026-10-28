@@ -1,5 +1,3 @@
-package restaurantrush;
-
 //Waiter subclass
 public class Waiter extends Staff {
 
@@ -18,9 +16,11 @@ public class Waiter extends Staff {
         if (!t.isFree()) {
             throw new IllegalMoveException("Table is occupied");
         }
-
-        t.seat(c);
+        
+        //Swapped the order after pull request comment
         c.seatAt(t);
+        t.seat(c);
+        
 
         markActed();
     }

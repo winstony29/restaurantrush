@@ -1,5 +1,3 @@
-package restaurantrush;
-
 //Main parent class for staff
 public abstract class Staff {
     private boolean actedThisTurn = false;
