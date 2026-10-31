@@ -1,6 +1,9 @@
 import java.util.ArrayDeque;
 import java.util.ArrayList;
 import java.util.Comparator;
+import java.util.LinkedHashMap;
+import java.util.Map;
+import java.util.function.IntFunction;
 import java.util.List;
 import java.util.OptionalDouble;
 import java.util.Queue;
@@ -11,7 +14,9 @@ public class Game {
 
     private int turn = 0;
     private final int maxTurns = 18;
-    private final int[] arrivalTurns = {1, 4, 7, 10, 13, 16};
+    // who arrives when: the base run replaces two Regulars with a VIP (turn 4) and a Critic (turn 7)
+    private final Map<Integer, IntFunction<Customer>> arrivals = new LinkedHashMap<>();
+    private Reputation reputation = Reputation.NEUTRAL;
 
     private final List<Table> tables = new ArrayList<>();
     private final Queue<Customer> waitingQueue = new ArrayDeque<>();
@@ -29,6 +34,12 @@ public class Game {
 
     public Game(RestaurantCLI cli) {
         this.cli = cli;
+        arrivals.put(1, RegularCustomer::new);
+        arrivals.put(4, VIPCustomer::new);
+        arrivals.put(7, CriticCustomer::new);
+        arrivals.put(10, RegularCustomer::new);
+        arrivals.put(13, RegularCustomer::new);
+        arrivals.put(16, RegularCustomer::new);
         // tables, menu
         tables.add(new Table(1));
         tables.add(new Table(2));
@@ -65,12 +76,11 @@ public class Game {
 
     // ids 1..6 in arrival order
     private void processArrival() {
-        for (int t : arrivalTurns) {
-            if (t == turn) {
-                Customer c = new Customer(customers.size() + 1);
-                customers.add(c);
-                waitingQueue.add(c);
-            }
+        IntFunction<Customer> type = arrivals.get(turn);
+        if (type != null) {
+            Customer c = type.apply(customers.size() + 1);
+            customers.add(c);
+            waitingQueue.add(c);
         }
     }
 
@@ -102,7 +112,14 @@ public class Game {
                 waitingQueue.remove(c);
             }
             case TAKE_ORDER -> orders.add(waiter.takeOrder(c, menu));
-            case SERVE -> waiter.serve(c == null ? null : c.getOrder(), turn);
+            case SERVE -> {
+                waiter.serve(c == null ? null : c.getOrder(), turn);
+                // the served customer may have an opinion; only a Critic ever does
+                Rating r = c.rateService(c.getOrder(), turn);
+                if (r != Rating.NONE) {
+                    reputation = Reputation.valueOf(r.name());
+                }
+            }
             case WAIT -> { }
         }
     }
@@ -110,7 +127,7 @@ public class Game {
     // null order means wait
     private void applyChefChoice(ChefChoice choice) {
         if (choice.order() != null) {
-            chef.cook(choice.order());
+            chef.cook(choice.order(), turn);
         }
     }
 
@@ -140,7 +157,7 @@ public class Game {
     private void processWaitingAndAbandonment() {
         for (Customer c : customers) {
             if (isWaitingForService(c)) {
-                c.loseSatisfactionForWaiting();
+                c.loseSatisfactionForWaiting(reputation);
                 if (c.hasGivenUp()) {
                     abandon(c);
                 }
@@ -179,6 +196,7 @@ public class Game {
     }
 
     public int getRevenueCents() { return revenueCents; }
+    public Reputation getReputation() { return reputation; }
     public int getTurn() { return turn; }
     public int getMaxTurns() { return maxTurns; }
     public List<Customer> getWaitingQueue() { return List.copyOf(waitingQueue); }
