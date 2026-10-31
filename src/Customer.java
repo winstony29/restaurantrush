@@ -1,5 +1,5 @@
 /** Represents a customer and tracks their order, table and satisfaction. */
-public class Customer {
+public abstract class Customer {
     private final int id;
     private int satisfaction = 100;
     private CustomerStatus status = CustomerStatus.WAITING;
@@ -7,6 +7,19 @@ public class Customer {
     private Order order;
     private int servedTurn = -1;
     private int readyToPayTurn = -1;
+
+    // Each customer type has its own waiting penalty.
+    protected abstract int waitingLoss();
+
+    // No discount by default.
+    public int applyDiscount(int cents) {
+        return cents;
+    }
+
+    // No rating by default.
+    public Rating rateService(Order o, int servedTurn) {
+        return Rating.NONE;
+    }
 
     public Customer(int id) {
         if (id <= 0) {
@@ -23,11 +36,13 @@ public class Customer {
         return menu.getItem((id - 1) % menu.getItems().size());
     }
 
-    // Customers waiting for a table or food lose 8 points each turn.
-    public void loseSatisfactionForWaiting() {
+
+    // Waiting customers lose satisfaction based on their type and reputation.
+    public void loseSatisfactionForWaiting(Reputation r) {
         if (status == CustomerStatus.WAITING || status == CustomerStatus.SEATED
                 || status == CustomerStatus.ORDERED) {
-            satisfaction = Math.max(0, satisfaction - 8);
+            int loss = r.adjustLoss(waitingLoss());
+            satisfaction = Math.max(0, satisfaction - loss);
         }
     }
 
@@ -43,7 +58,6 @@ public class Customer {
         }
         table = t;
         status = CustomerStatus.SEATED;
-        // Waiter must coordinate the corresponding Table.seat(this) call.
     }
 
     public void placeOrder(Order o) {
