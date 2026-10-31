@@ -10,6 +10,8 @@ javac -d out src/*.java test/Replay.java
 java -cp out Replay test/victory.txt
 ```
 
+From Stage 2 on, the base setting has a VIP on T4 and a Critic on T7, so these two scripts only reproduce the Stage 1 numbers at the stage-1 tag (`git checkout stage-1`). On Stage 2 code `victory.txt` gives the Stage 2 victory numbers and `defeat.txt` stops at T16, because the Critic has already left.
+
 ## Worked example check (brief 3.3)
 
 c3 orders Pasta and gets full attention in the victory run, turns 7 to 12:
