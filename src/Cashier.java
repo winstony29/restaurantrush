@@ -29,8 +29,8 @@ public class Cashier extends Staff {
             throw new IllegalMoveException("Order has not been served");
         }
 
-        // Calculate the bill
-        int bill = order.billCents();
+        // STAGE 2 CHANGE: Customer-specific discount
+        int bill = c.applyDiscount(order.basePriceCents());
 
         // Save the table reference before updating customer status
         Table table = c.getTable();
