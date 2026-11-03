@@ -1,7 +1,7 @@
 //Chef subclass
 public class Chef extends Staff {
     //reuires order object implemented later
-    public void cook(Order o) {
+    public void cook(Order o, int turn) {
 
         // Check whether Chef has already acted this turn
         requireAvailable();
@@ -16,8 +16,8 @@ public class Chef extends Staff {
             throw new IllegalMoveException("Order cannot be cooked");
         }
 
-        // Advance cooking progress by one unit
-        o.advancePrep();
+        // Advance cooking progress by one unit, changed to add turn for stage 2
+        o.advancePrep(turn);
 
         // Mark Chef as having acted
         markActed();
