@@ -132,7 +132,8 @@ public class RestaurantCLI {
         System.out.println("=============== Turn " + g.getTurn() + " / " + g.getMaxTurns()
                 + " ===============");
         System.out.println("Revenue: " + money(g.getRevenueCents()));
- 
+        System.out.println("Reputation: " + g.getReputation());
+
         List<Customer> waiting = g.getWaitingQueue();
         if (waiting.isEmpty()) {
             System.out.println("Waiting: nobody");
@@ -177,7 +178,8 @@ public class RestaurantCLI {
  
     public void displayTurnEnd(Game g) {
         System.out.println("--- End of turn " + g.getTurn() + ": revenue " + money(g.getRevenueCents())
-                + ", paid " + g.getPaidCount() + ", left " + g.getUnhappyDepartures() + " ---");
+                + ", paid " + g.getPaidCount() + ", left " + g.getUnhappyDepartures()
+                + ", reputation " + g.getReputation() + " ---");
     }
  
     public void displayResult(Game g) {
