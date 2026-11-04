@@ -1,0 +1,14 @@
+T4:  seat c2 t2  | wait
+T5:  order c2    | cook c2
+T6:  serve c2    | wait
+T7:  seat c3 t1  | wait
+T8:  order c3    | cook c3
+T9:  wait        | cook c3
+T10: seat c4 t2  | wait
+T11: order c4    | cook c4
+T12: serve c3    | wait
+T13: serve c4    | wait
+T15: seat c5 t1  | wait
+T16: order c5    | cook c5
+T17: serve c5    | wait
+T18: seat c6 t2  | wait
