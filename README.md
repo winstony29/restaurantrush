@@ -57,7 +57,7 @@ Stage 1 implements the core restaurant management system.
 
 ## Stage 2 — Customer Behaviour Extension
 
-**Git tag:** `stage-2` (pending)
+**Git tag:** `stage-2`
 
 Stage 2 introduces VIP and Critic customers with different satisfaction, pricing and service-rating behaviours.
 
@@ -119,16 +119,16 @@ New customer types can be introduced without modifying the existing seating, coo
 
 ### GitHub Comparison
 
-Stage 1 → Stage 2: Add the comparison link after `stage-2` is tagged.
+Stage 1 → Stage 2: [stage-1...stage-2](https://github.com/winstony29/restaurantrush/compare/stage-1...stage-2)
 
-## Stage 2 ? Stage 3 ? Host, Combos and Happy Hour
+## Stage 2 → Stage 3: Host, Combos and Happy Hour
 
 **Git tag:** `stage-3` (pending)
 
 The Host acts before the Waiter and Chef. Host and Waiter share seating rules
 through `Seater`, with one action per staff member per turn. The Cashier applies
 the customer discount first, then Happy Hour according to the order's placed turn.
-For example, a VIP Burger during Happy Hour costs 1500 ? 90% ? 80% = 1080 cents.
+For example, a VIP Burger during Happy Hour costs 1500 × 90% × 80% = 1080 cents.
 
 | File | New / Changed | Purpose |
 |---|---|---|
@@ -150,4 +150,4 @@ The table describes the complete Stage 3 transition. This branch implements only
 teammate branches. Full compilation requires `HappyHour`, the updated `Order`
 constructor/accessor and Game's updated staff calls.
 
-Stage 2 ? Stage 3 GitHub comparison: pending until `stage-3` is tagged.
+Stage 2 → Stage 3 GitHub comparison: pending until `stage-3` is tagged.
