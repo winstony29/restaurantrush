@@ -37,6 +37,8 @@ public class Replay {
             String[] c = line(g)[3].split(" ");
             return new ChefChoice(c[0].equals("cook") ? cust(g, c[1]).getOrder() : null);
         }
+        // scripted runs never wait for Enter
+        protected void pause() { }
         // a scripted move should never be illegal
         public void displayError(String r) { throw new AssertionError("script move rejected: " + r); }
         public void displayRecovery(Customer c, int newValue) {
