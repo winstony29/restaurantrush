@@ -1,31 +1,7 @@
 //Waiter subclass
-public class Waiter extends Staff {
+public class Waiter extends Seater {
 
-    public void seat(Customer c, Table t) {
-
-        requireAvailable();
-
-        if (c == null || t == null) {
-            throw new IllegalMoveException("Invalid customer or table");
-        }
-
-        if (c.getStatus() != CustomerStatus.WAITING) {
-            throw new IllegalMoveException("Customer is not waiting");
-        }
-
-        if (!t.isFree()) {
-            throw new IllegalMoveException("Table is occupied");
-        }
-        
-        //Swapped the order after pull request comment
-        c.seatAt(t);
-        t.seat(c);
-        
-
-        markActed();
-    }
-
-    public Order takeOrder(Customer c, Menu m) {
+    public Order takeOrder(Customer c, Menu m, int turn) {
 
         requireAvailable();
 
@@ -42,7 +18,7 @@ public class Waiter extends Staff {
 
         MenuItem item = c.chooseItem(m);
 
-        Order order = new Order(item, c);
+        Order order = new Order(item, c, turn);
 
         c.placeOrder(order);
 

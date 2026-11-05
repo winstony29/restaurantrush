@@ -1,7 +1,7 @@
 //Cashier subclass
 public class Cashier extends Staff {
 
-    public int collect(Customer c) {
+    public int collect(Customer c, HappyHour hh) {
 
         // Check whether Cashier has already acted
         requireAvailable();
@@ -29,8 +29,11 @@ public class Cashier extends Staff {
             throw new IllegalMoveException("Order has not been served");
         }
 
-        // STAGE 2 CHANGE: Customer-specific discount
-        int bill = c.applyDiscount(order.basePriceCents());
+        // Apply the customer discount first, then Happy Hour for the placed turn.
+        int bill = hh.discountOn(
+            order.getPlacedTurn(),
+            c.applyDiscount(order.basePriceCents())
+        );
 
         // Save the table reference before updating customer status
         Table table = c.getTable();
