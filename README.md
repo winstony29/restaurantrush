@@ -57,7 +57,7 @@ Stage 1 implements the core restaurant management system.
 
 ## Stage 2 — Customer Behaviour Extension
 
-**Git tag:** `stage-2` (pending)
+**Git tag:** `stage-2`
 
 Stage 2 introduces VIP and Critic customers with different satisfaction, pricing and service-rating behaviours.
 
@@ -119,4 +119,35 @@ New customer types can be introduced without modifying the existing seating, coo
 
 ### GitHub Comparison
 
-Stage 1 → Stage 2: Add the comparison link after `stage-2` is tagged.
+Stage 1 → Stage 2: [stage-1...stage-2](https://github.com/winstony29/restaurantrush/compare/stage-1...stage-2)
+
+## Stage 2 → Stage 3: Host, Combos and Happy Hour
+
+**Git tag:** `stage-3` (pending)
+
+The Host acts before the Waiter and Chef. Host and Waiter share seating rules
+through `Seater`, with one action per staff member per turn. The Cashier applies
+the customer discount first, then Happy Hour according to the order's placed turn.
+For example, a VIP Burger during Happy Hour costs 1500 × 90% × 80% = 1080 cents.
+
+| File | New / Changed | Purpose |
+|---|---|---|
+| `Seater.java` | New | Shares the existing seating guards and state transitions between Host and Waiter. |
+| `Host.java` | New | Inherits seating with its own staff action availability. |
+| `Waiter.java` | Changed | Inherits seating; passes the current turn when taking an order. Serving is unchanged. |
+| `Cashier.java` | Changed | Applies Happy Hour after the customer discount, preserving payment and table clearing. |
+| `ComboMeal.java` | New | Computes combo price and preparation units from two menu items. |
+| `HappyHour.java` | New | Tracks the once-per-game two-turn period and discounts orders placed during it. |
+| `HostChoice.java` | New | Represents the manager's Host action. |
+| `Order.java` | Changed | Records and exposes the turn the order was placed. |
+| `Customer.java` | Changed | Supports capped satisfaction recovery for eligible customers. |
+| `Game.java` | Changed | Coordinates Host actions, combos, Happy Hour activation and recovery, and updated staff calls. |
+| `RestaurantCLI.java` | Changed | Prompts for Host and Happy Hour choices and displays Happy Hour status. |
+| `TEST_NOTES.md` / `test/` | Changed | Documents Stage 3 runs and supports Host and Happy Hour replay choices. |
+
+The table describes the complete Stage 3 transition. This branch implements only
+`Seater`, `Host`, `Waiter`, `Cashier` and this README; the remaining rows depend on
+teammate branches. Full compilation requires `HappyHour`, the updated `Order`
+constructor/accessor and Game's updated staff calls.
+
+Stage 2 → Stage 3 GitHub comparison: pending until `stage-3` is tagged.
