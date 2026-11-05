@@ -1,0 +1,24 @@
+T1     host c1 t1   order c1       cook c1    | c1 92 ORDERED Salad:READY; | $0.00 paid=0 rep=NEUTRAL hh=-
+T2     host wait    serve c1       wait       | c1 92 SERVED Salad:SERVED; | $0.00 paid=0 rep=NEUTRAL hh=-
+T3     host wait    wait           wait       | c1 92 READY_TO_PAY Salad:SERVED; | $0.00 paid=0 rep=NEUTRAL hh=-
+T4     host c2 t2   order c2       cook c2    | c1 92 PAID Salad:PAID; c2 95 ORDERED Burger:READY; | $9.00 paid=1 rep=NEUTRAL hh=-
+T5     host wait    serve c2       wait       | c1 92 PAID Salad:PAID; c2 95 SERVED Burger:SERVED; | $9.00 paid=1 rep=NEUTRAL hh=-
+T6     host wait    wait           wait       | c1 92 PAID Salad:PAID; c2 95 READY_TO_PAY Burger:SERVED; | $9.00 paid=1 rep=NEUTRAL hh=-
+T7     host c3 t1   wait           wait       | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 88 SEATED; | $22.50 paid=2 rep=NEUTRAL hh=-
+T8     host wait    wait           wait       | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 76 SEATED; | $22.50 paid=2 rep=NEUTRAL hh=-
+T9     host wait    wait           wait       | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 64 SEATED; | $22.50 paid=2 rep=NEUTRAL hh=-
+T10    host c4 t2   wait           wait       | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 52 SEATED; c4 92 SEATED; | $22.50 paid=2 rep=NEUTRAL hh=-
+T11    host wait    wait           wait       | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 40 SEATED; c4 84 SEATED; | $22.50 paid=2 rep=NEUTRAL hh=-
+  recover c3 55
+  recover c4 99
+T12 hh host wait    order c3       cook c3    | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 43 ORDERED Burger + Pasta combo:TAKEN; c4 91 SEATED; | $22.50 paid=2 rep=NEUTRAL hh=active
+  recover c3 58
+  recover c4 100
+  recover c5 100
+T13    host wait    order c4       cook c4    | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 46 ORDERED Burger + Pasta combo:TAKEN; c4 92 ORDERED Salad + Pasta combo:TAKEN; c5 92 WAITING; | $22.50 paid=2 rep=NEUTRAL hh=active
+T14    host wait    wait           cook c3    | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 34 ORDERED Burger + Pasta combo:TAKEN; c4 84 ORDERED Salad + Pasta combo:TAKEN; c5 84 WAITING; | $22.50 paid=2 rep=NEUTRAL hh=used
+T15    host wait    wait           cook c4    | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 22 ORDERED Burger + Pasta combo:TAKEN; c4 76 ORDERED Salad + Pasta combo:TAKEN; c5 76 WAITING; | $22.50 paid=2 rep=NEUTRAL hh=used
+T16    host wait    wait           cook c3    | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 10 ORDERED Burger + Pasta combo:READY; c4 68 ORDERED Salad + Pasta combo:TAKEN; c5 68 WAITING; c6 92 WAITING; | $22.50 paid=2 rep=NEUTRAL hh=used
+T17    host wait    serve c3       cook c4    | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 10 SERVED Burger + Pasta combo:SERVED; c4 62 ORDERED Salad + Pasta combo:READY; c5 62 WAITING; c6 86 WAITING; | $22.50 paid=2 rep=GOOD hh=used
+T18    host wait    serve c4       wait       | c1 92 PAID Salad:PAID; c2 95 PAID Burger:PAID; c3 10 READY_TO_PAY Burger + Pasta combo:SERVED; c4 62 SERVED Salad + Pasta combo:SERVED; c5 56 WAITING; c6 80 WAITING; | $22.50 paid=2 rep=GOOD hh=used
+RESULT DEFEAT: paid=2 revenue=$22.50 avg=93.5 served=4 left=0 turns=18
