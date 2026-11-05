@@ -30,7 +30,9 @@ import java.util.StringJoiner;
 public class RestaurantCLI {
  
     private final Scanner in;
- 
+    // display preference only: the manager can hide or show the Happy Hour explanation
+    private boolean explainHappyHour = true;
+
     public RestaurantCLI() {
         this(new Scanner(System.in));
     }
@@ -164,11 +166,12 @@ public class RestaurantCLI {
      */
     public boolean askActivateHappyHour(Game g) {
         System.out.println();
-        System.out.println("HAPPY HOUR is available (once per game). If you start it now it lasts this");
-        System.out.println("turn and the next: orders taken get 20% off, and customers still waiting");
-        System.out.println("for a table or food recover 15 satisfaction at the start of each turn.");
+        if (explainHappyHour) {
+            printHappyHourExplanation();
+        }
         while (true) {
-            System.out.print("Start Happy Hour on turn " + g.getTurn() + "? (y/n) > ");
+            String toggle = explainHappyHour ? "h = hide this explanation" : "h = show the explanation";
+            System.out.print("Start Happy Hour on turn " + g.getTurn() + "? (y/n, " + toggle + ") > ");
             if (!in.hasNextLine()) {
                 return false;
             }
@@ -180,9 +183,23 @@ public class RestaurantCLI {
                 case "n", "no" -> {
                     return false;
                 }
-                default -> System.out.println("Please enter y or n.");
+                case "h" -> {
+                    explainHappyHour = !explainHappyHour;
+                    if (explainHappyHour) {
+                        printHappyHourExplanation();
+                    } else {
+                        System.out.println("Explanation hidden. Enter h at this prompt to show it again.");
+                    }
+                }
+                default -> System.out.println("Please enter y, n or h.");
             }
         }
+    }
+
+    private static void printHappyHourExplanation() {
+        System.out.println("HAPPY HOUR is available (once per game). If you start it now it lasts this");
+        System.out.println("turn and the next: orders taken get 20% off, and customers still waiting");
+        System.out.println("for a table or food recover 15 satisfaction at the start of each turn.");
     }
 
     /** Called by Game when a staff action throws IllegalMoveException. */
