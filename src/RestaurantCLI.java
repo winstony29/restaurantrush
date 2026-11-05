@@ -21,6 +21,11 @@ import java.util.StringJoiner;
  * Stage 2: customers are shown with their type (c2 VIP, c3 Critic) and
  * READY dishes show the turn they became ready, since that is what the
  * Critic judges. The type label is display only; no rule depends on it.
+ *
+ * Stage 3: readHostChoice (the Host acts before the Waiter each turn) and
+ * askActivateHappyHour (Game only asks while Happy Hour is unused). The
+ * Happy Hour status and recovery lines read Game.getHappyHour(), so they
+ * live in the Game PR.
  */
 public class RestaurantCLI {
  
@@ -37,6 +42,39 @@ public class RestaurantCLI {
  
     // ------------------------------------------------------------------ input
  
+    /** The Host can only seat one waiting customer, or wait. Asked before the Waiter. */
+    public HostChoice readHostChoice(Game g) {
+        while (true) {
+            System.out.println();
+            System.out.println("HOST - choose one task:");
+            System.out.println("  1) Seat a waiting customer");
+            System.out.println("  0) Wait");
+            Integer pick = readInt("> ");
+            if (pick == null) {
+                return HostChoice.waitTurn(); // input ended
+            }
+            switch (pick) {
+                case 1 -> {
+                    System.out.println("Waiting: " + customerIds(g.getWaitingQueue())
+                            + "   Free tables: " + tableIds(g.getFreeTables()));
+                    Customer c = askCustomer(g, "Customer id (blank to go back): ");
+                    if (c == null) {
+                        continue;
+                    }
+                    Table t = askTable(g, "Table id (blank to go back): ");
+                    if (t == null) {
+                        continue;
+                    }
+                    return HostChoice.seat(c, t);
+                }
+                case 0 -> {
+                    return HostChoice.waitTurn();
+                }
+                default -> System.out.println("Please enter 0 or 1.");
+            }
+        }
+    }
+
     public WaiterChoice readWaiterChoice(Game g) {
         while (true) {
             System.out.println();
@@ -118,7 +156,35 @@ public class RestaurantCLI {
             }
         }
     }
- 
+
+    /**
+     * Asks whether to start Happy Hour this turn. Game only calls this while
+     * Happy Hour is unused; whether it really can start is HappyHour's rule.
+     * Returns false if input has ended.
+     */
+    public boolean askActivateHappyHour(Game g) {
+        System.out.println();
+        System.out.println("HAPPY HOUR is available (once per game). If you start it now it lasts this");
+        System.out.println("turn and the next: orders taken get 20% off, and customers still waiting");
+        System.out.println("for a table or food recover 15 satisfaction at the start of each turn.");
+        while (true) {
+            System.out.print("Start Happy Hour on turn " + g.getTurn() + "? (y/n) > ");
+            if (!in.hasNextLine()) {
+                return false;
+            }
+            String answer = in.nextLine().trim().toLowerCase();
+            switch (answer) {
+                case "y", "yes" -> {
+                    return true;
+                }
+                case "n", "no" -> {
+                    return false;
+                }
+                default -> System.out.println("Please enter y or n.");
+            }
+        }
+    }
+
     /** Called by Game when a staff action throws IllegalMoveException. */
     public void displayError(String reason) {
         System.out.println("Not allowed: " + reason);
