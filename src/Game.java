@@ -17,6 +17,7 @@ public class Game {
     // who arrives when: the base run replaces two Regulars with a VIP (turn 4) and a Critic (turn 7)
     private final Map<Integer, IntFunction<Customer>> arrivals = new LinkedHashMap<>();
     private Reputation reputation = Reputation.NEUTRAL;
+    private final HappyHour happyHour = new HappyHour();
 
     private final List<Table> tables = new ArrayList<>();
     private final Queue<Customer> waitingQueue = new ArrayDeque<>();
@@ -24,10 +25,11 @@ public class Game {
     private final List<Order> orders = new ArrayList<>();
     private final Menu menu;
 
+    private final Host host = new Host();
     private final Waiter waiter = new Waiter();
     private final Chef chef = new Chef();
     private final Cashier cashier = new Cashier();
-    private final List<Staff> staff = List.of(waiter, chef, cashier);
+    private final List<Staff> staff = List.of(host, waiter, chef, cashier);
 
     private int revenueCents = 0;
     private final List<Integer> paidSatisfactions = new ArrayList<>();
@@ -43,11 +45,13 @@ public class Game {
         // tables, menu
         tables.add(new Table(1));
         tables.add(new Table(2));
-        // order matters, customers pick by index
-        menu = new Menu(List.of(
-                new MenuItem("Salad", 900, 1),
-                new MenuItem("Burger", 1500, 1),
-                new MenuItem("Pasta", 1800, 2)));
+        // order matters, customers pick by index; combos go after the three base items
+        MenuItem salad = new MenuItem("Salad", 900, 1);
+        MenuItem burger = new MenuItem("Burger", 1500, 1);
+        MenuItem pasta = new MenuItem("Pasta", 1800, 2);
+        menu = new Menu(List.of(salad, burger, pasta,
+                new ComboMeal(salad, pasta),
+                new ComboMeal(burger, pasta)));
     }
 
     // always all 18 turns, no early end
@@ -68,6 +72,8 @@ public class Game {
         staff.forEach(Staff::resetTurn);
         processArrival();
         cli.displayTurnStart(this);
+        offerHappyHour();
+        applyHappyHourRecovery();
         applyManagerChoices();
         processEatingAndPayment();
         processWaitingAndAbandonment();
@@ -84,23 +90,50 @@ public class Game {
         }
     }
 
-    // waiter before chef, a rejected choice is asked again without using up the task
+    // once per game, so only ask while it is unused
+    private void offerHappyHour() {
+        if (!happyHour.isUsed() && cli.askActivateHappyHour(this)) {
+            happyHour.activate(turn);
+        }
+    }
+
+    // on each active turn, anyone still waiting for a table or food recovers 15
+    private void applyHappyHourRecovery() {
+        if (happyHour.isActive(turn)) {
+            for (Customer c : customers) {
+                if (isWaitingForService(c)) {
+                    c.recoverSatisfaction(15);
+                    cli.displayRecovery(c, c.getSatisfaction());
+                }
+            }
+        }
+    }
+
+    // host, then waiter, then chef
     private void applyManagerChoices() {
+        untilLegal(() -> applyHostChoice(cli.readHostChoice(this)));
+        untilLegal(() -> applyWaiterChoice(cli.readWaiterChoice(this)));
+        untilLegal(() -> applyChefChoice(cli.readChefChoice(this)));
+    }
+
+    // a rejected choice is asked again without using up the task
+    private void untilLegal(Runnable choice) {
         while (true) {
             try {
-                applyWaiterChoice(cli.readWaiterChoice(this));
-                break;
+                choice.run();
+                return;
             } catch (IllegalMoveException e) {
                 cli.displayError(e.getMessage());
             }
         }
-        while (true) {
-            try {
-                applyChefChoice(cli.readChefChoice(this));
-                break;
-            } catch (IllegalMoveException e) {
-                cli.displayError(e.getMessage());
-            }
+    }
+
+    // null customer means wait
+    private void applyHostChoice(HostChoice choice) {
+        Customer c = choice.customer();
+        if (c != null) {
+            host.seat(c, choice.table());
+            waitingQueue.remove(c);
         }
     }
 
@@ -111,7 +144,7 @@ public class Game {
                 waiter.seat(c, choice.table());
                 waitingQueue.remove(c);
             }
-            case TAKE_ORDER -> orders.add(waiter.takeOrder(c, menu));
+            case TAKE_ORDER -> orders.add(waiter.takeOrder(c, menu, turn));
             case SERVE -> {
                 waiter.serve(c == null ? null : c.getOrder(), turn);
                 // the served customer may have an opinion; only a Critic ever does
@@ -140,7 +173,7 @@ public class Game {
         }
         Customer payer = nextCustomerToPay();
         if (payer != null) {
-            revenueCents += cashier.collect(payer);
+            revenueCents += cashier.collect(payer, happyHour);
             paidSatisfactions.add(payer.getSatisfaction());
         }
     }
@@ -197,6 +230,8 @@ public class Game {
 
     public int getRevenueCents() { return revenueCents; }
     public Reputation getReputation() { return reputation; }
+    public Host getHost() { return host; }
+    public HappyHour getHappyHour() { return happyHour; }
     public int getTurn() { return turn; }
     public int getMaxTurns() { return maxTurns; }
     public List<Customer> getWaitingQueue() { return List.copyOf(waitingQueue); }

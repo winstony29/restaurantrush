@@ -133,6 +133,7 @@ public class RestaurantCLI {
                 + " ===============");
         System.out.println("Revenue: " + money(g.getRevenueCents()));
         System.out.println("Reputation: " + g.getReputation());
+        System.out.println("Happy Hour: " + happyHourStatus(g));
 
         List<Customer> waiting = g.getWaitingQueue();
         if (waiting.isEmpty()) {
@@ -180,6 +181,20 @@ public class RestaurantCLI {
         System.out.println("--- End of turn " + g.getTurn() + ": revenue " + money(g.getRevenueCents())
                 + ", paid " + g.getPaidCount() + ", left " + g.getUnhappyDepartures()
                 + ", reputation " + g.getReputation() + " ---");
+    }
+
+    /** Called by Game for each customer who recovers during Happy Hour. */
+    public void displayRecovery(Customer c, int newValue) {
+        System.out.println("Happy Hour: " + label(c) + " recovers to satisfaction " + newValue);
+    }
+
+    private static String happyHourStatus(Game g) {
+        HappyHour hh = g.getHappyHour();
+        int left = hh.remainingTurns(g.getTurn());
+        if (left > 0) {
+            return "active, " + left + " turn(s) left";
+        }
+        return hh.isUsed() ? "used" : "available";
     }
  
     public void displayResult(Game g) {

@@ -1,0 +1,14 @@
+T1:  host c1 t1 | order c1    | cook c1
+T2:  serve c1    | wait
+T4:  host c2 t2 | order c2    | cook c2
+T5:  serve c2    | wait
+T7:  host c3 t1 | order c3    | cook c3
+T8:  wait        | cook c3
+T9:  wait        | cook c3
+T10: host c4 t2 | serve c3    | wait
+T13: hh | host c5 t1 | order c4 | cook c4
+T14: order c5    | cook c4
+T15: wait        | cook c4
+T16: serve c4    | cook c5
+T17: wait        | cook c5
+T18: wait        | cook c5
