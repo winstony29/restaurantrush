@@ -94,6 +94,7 @@ public class Game {
     private void offerHappyHour() {
         if (!happyHour.isUsed() && cli.askActivateHappyHour(this)) {
             happyHour.activate(turn);
+            cli.displayHappyHour(this);
         }
     }
 

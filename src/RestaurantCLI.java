@@ -199,7 +199,7 @@ public class RestaurantCLI {
                 + " ===============");
         System.out.println("Revenue: " + money(g.getRevenueCents()));
         System.out.println("Reputation: " + g.getReputation());
-        System.out.println("Happy Hour: " + happyHourStatus(g));
+        displayHappyHour(g);
 
         List<Customer> waiting = g.getWaitingQueue();
         if (waiting.isEmpty()) {
@@ -247,6 +247,11 @@ public class RestaurantCLI {
         System.out.println("--- End of turn " + g.getTurn() + ": revenue " + money(g.getRevenueCents())
                 + ", paid " + g.getPaidCount() + ", left " + g.getUnhappyDepartures()
                 + ", reputation " + g.getReputation() + " ---");
+    }
+
+    /** Start-of-turn status line; Game also calls it right after Happy Hour starts. */
+    public void displayHappyHour(Game g) {
+        System.out.println("Happy Hour: " + happyHourStatus(g));
     }
 
     /** Called by Game for each customer who recovers during Happy Hour. */

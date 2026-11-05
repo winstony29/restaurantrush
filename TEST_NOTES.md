@@ -169,15 +169,18 @@ Arrivals and customer types are the same as Stage 2. The menu adds two combos af
 - On each active turn, after the start-of-turn display, every customer still waiting for a table or food recovers 15 (max 100).
 - Everything else is unchanged from Stage 2.
 
-Script lines can now have two more columns: `T13: hh | host c5 t1 | order c4 | cook c4`. A leading `hh` starts Happy Hour that turn, and `host c<id> t<id>` is the Host's seat. Turns without them, and every Stage 1 and 2 line, mean no Happy Hour and the Host waits.
+Script lines can now have two more columns: `T13: hh | host c5 t1 | order c4 | cook c4`. A leading `hh` starts Happy Hour that turn, and `host c<id> t<id>` is the Host's seat. Turns without them, and every Stage 1 and 2 line, mean no Happy Hour and the Host waits. A line Replay does not recognise, or a customer or table that does not exist on that turn, stops the replay with an error instead of becoming a wait.
 
-These runs cannot be replayed until Myat's, Sadhana's and Darren's Stage 3 branches are merged into main. They were checked on a local merge with Myat's branch and stand-ins for the rest, and against a separate hand model of the rules. Then:
+These runs cannot be replayed until Darren's Host and Cashier branch is merged into main. They were checked on a local merge of all four Stage 3 branches, and against a separate hand model of the rules. Then:
 
 ```
 javac -d out src/*.java test/*.java
 java -cp out Replay test/stage3-victory.txt
 java -cp out Replay test/stage3-defeat.txt
+java -cp out ReplayCheck
 ```
+
+`ReplayCheck` compares every turn, not just the final result: each turn-end line, each Happy Hour recovery and the result must match `test/stage3-victory.expected` and `test/stage3-defeat.expected`. Changing the recovery from 15 to 14, for example, leaves both final results unchanged but fails the check at c4's T13 recovery (97 vs 96).
 
 ## Stage 3 victory run
 
