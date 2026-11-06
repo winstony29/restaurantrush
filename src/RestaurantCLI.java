@@ -415,12 +415,14 @@ public class RestaurantCLI {
         }
     }
 
+    // the whole explanation at once, then one Enter
     private void explain(List<String> lines) {
         for (String line : lines) {
             System.out.println();
             System.out.println("  " + line);
-            pause();
         }
+        System.out.println();
+        pause();
     }
 
     /** Waits for Enter so the player can read an explanation. Scripted runs override it. */
