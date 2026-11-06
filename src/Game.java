@@ -152,6 +152,7 @@ public class Game {
                 Rating r = c.rateService(c.getOrder(), turn);
                 if (r != Rating.NONE) {
                     reputation = Reputation.valueOf(r.name());
+                    cli.displayReview(c, r, reputation);
                 }
             }
             case WAIT -> { }

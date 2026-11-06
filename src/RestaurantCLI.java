@@ -1,8 +1,12 @@
+import java.util.ArrayList;
+import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.OptionalDouble;
 import java.util.Scanner;
+import java.util.Set;
 import java.util.StringJoiner;
- 
+
 /**
  * «boundary» All console input and output. Holds no game rules: it turns
  * what the manager types into a WaiterChoice / ChefChoice and prints the
@@ -26,44 +30,76 @@ import java.util.StringJoiner;
  * askActivateHappyHour (Game only asks while Happy Hour is unused). The
  * Happy Hour status and recovery lines read Game.getHappyHour(), so they
  * live in the Game PR.
+ *
+ * Layout: each turn screen is split into sections with a summary of what
+ * each staff member can do, and the first VIP and the first Critic are
+ * explained when they arrive. The explanations are display text only; the
+ * rules they describe live in the customer classes and Reputation.
  */
 public class RestaurantCLI {
- 
+
+    private static final String RULE = "=".repeat(64);
+    private static final String THIN = "-".repeat(64);
+
+    // shown once, the first time a customer of that type arrives
+    private static final Map<String, List<String>> INTRODUCTIONS = Map.of(
+            "VIP", List.of(
+                    "ALERT: A VIP has arrived!",
+                    "VIPs are patient: while waiting for a table or food they lose only"
+                            + "\n  5 satisfaction per turn, instead of 8 for a Regular.",
+                    "VIPs pay 10% less than the menu price, so they bring in a little less money.",
+                    "Like any customer, a VIP leaves without paying if satisfaction reaches 0."),
+            "Critic", List.of(
+                    "WARNING: A food critic has arrived!",
+                    "The critic always orders the most expensive dish on the menu, and loses"
+                            + "\n  12 satisfaction per turn while waiting for a table or food.",
+                    "The critic judges how quickly the dish reaches the table once it is READY:"
+                            + "\n  served the next turn = GOOD, after 2 turns = NEUTRAL, 3 or more = BAD.",
+                    "A GOOD review gives the restaurant a GOOD reputation: from then on every"
+                            + "\n  waiting customer loses 2 less satisfaction per turn.",
+                    "A BAD review gives a BAD reputation: every waiting customer loses 2 more"
+                            + "\n  per turn. A NEUTRAL review sets the reputation back to NEUTRAL.",
+                    "Tip: serve the critic's dish on the turn after it becomes READY."));
+
     private final Scanner in;
     // display preference only: the manager can hide or show the Happy Hour explanation
     private boolean explainHappyHour = true;
+    // display memory only: welcome shown, who has been announced, which types have been explained
+    private boolean welcomed = false;
+    private final Set<Integer> announced = new HashSet<>();
+    private final Set<String> introduced = new HashSet<>();
 
     public RestaurantCLI() {
         this(new Scanner(System.in));
     }
- 
+
     /** Lets tests feed scripted input. */
     public RestaurantCLI(Scanner in) {
         this.in = in;
     }
- 
+
     // ------------------------------------------------------------------ input
- 
+
     /** The Host can only seat one waiting customer, or wait. Asked before the Waiter. */
     public HostChoice readHostChoice(Game g) {
         while (true) {
             System.out.println();
-            System.out.println("HOST - choose one task:");
-            System.out.println("  1) Seat a waiting customer");
-            System.out.println("  0) Wait");
-            Integer pick = readInt("> ");
+            System.out.println("  HOST - choose one task");
+            System.out.println("    1) Seat a waiting customer");
+            System.out.println("    0) Wait");
+            Integer pick = readInt("  > ");
             if (pick == null) {
                 return HostChoice.waitTurn(); // input ended
             }
             switch (pick) {
                 case 1 -> {
-                    System.out.println("Waiting: " + customerIds(g.getWaitingQueue())
-                            + "   Free tables: " + tableIds(g.getFreeTables()));
-                    Customer c = askCustomer(g, "Customer id (blank to go back): ");
+                    System.out.println("    Waiting: " + customerIds(g.getWaitingQueue())
+                            + "   |   Free tables: " + tableIds(g.getFreeTables()));
+                    Customer c = askCustomer(g, "    Customer id (blank to go back): ");
                     if (c == null) {
                         continue;
                     }
-                    Table t = askTable(g, "Table id (blank to go back): ");
+                    Table t = askTable(g, "    Table id (blank to go back): ");
                     if (t == null) {
                         continue;
                     }
@@ -72,7 +108,7 @@ public class RestaurantCLI {
                 case 0 -> {
                     return HostChoice.waitTurn();
                 }
-                default -> System.out.println("Please enter 0 or 1.");
+                default -> System.out.println("    Please enter 0 or 1.");
             }
         }
     }
@@ -80,40 +116,40 @@ public class RestaurantCLI {
     public WaiterChoice readWaiterChoice(Game g) {
         while (true) {
             System.out.println();
-            System.out.println("WAITER - choose one task:");
-            System.out.println("  1) Seat a waiting customer");
-            System.out.println("  2) Take an order");
-            System.out.println("  3) Serve a ready order");
-            System.out.println("  0) Wait");
-            Integer pick = readInt("> ");
+            System.out.println("  WAITER - choose one task");
+            System.out.println("    1) Seat a waiting customer");
+            System.out.println("    2) Take an order");
+            System.out.println("    3) Serve a ready order");
+            System.out.println("    0) Wait");
+            Integer pick = readInt("  > ");
             if (pick == null) {
                 return WaiterChoice.waitTurn(); // input ended
             }
             switch (pick) {
                 case 1 -> {
-                    System.out.println("Waiting: " + customerIds(g.getWaitingQueue())
-                            + "   Free tables: " + tableIds(g.getFreeTables()));
-                    Customer c = askCustomer(g, "Customer id (blank to go back): ");
+                    System.out.println("    Waiting: " + customerIds(g.getWaitingQueue())
+                            + "   |   Free tables: " + tableIds(g.getFreeTables()));
+                    Customer c = askCustomer(g, "    Customer id (blank to go back): ");
                     if (c == null) {
                         continue;
                     }
-                    Table t = askTable(g, "Table id (blank to go back): ");
+                    Table t = askTable(g, "    Table id (blank to go back): ");
                     if (t == null) {
                         continue;
                     }
                     return WaiterChoice.seat(c, t);
                 }
                 case 2 -> {
-                    System.out.println("Ready to order: " + customerIds(g.getCustomersToOrder()));
-                    Customer c = askCustomer(g, "Customer id (blank to go back): ");
+                    System.out.println("    Ready to order: " + customerIds(g.getCustomersToOrder()));
+                    Customer c = askCustomer(g, "    Customer id (blank to go back): ");
                     if (c == null) {
                         continue;
                     }
                     return WaiterChoice.takeOrder(c);
                 }
                 case 3 -> {
-                    System.out.println("Ready to serve: " + orderList(g.getOrdersToServe()));
-                    Customer c = askCustomer(g, "Customer id (blank to go back): ");
+                    System.out.println("    Ready to serve: " + orderList(g.getOrdersToServe()));
+                    Customer c = askCustomer(g, "    Customer id (blank to go back): ");
                     if (c == null) {
                         continue;
                     }
@@ -122,31 +158,31 @@ public class RestaurantCLI {
                 case 0 -> {
                     return WaiterChoice.waitTurn();
                 }
-                default -> System.out.println("Please enter 0, 1, 2 or 3.");
+                default -> System.out.println("    Please enter 0, 1, 2 or 3.");
             }
         }
     }
- 
+
     public ChefChoice readChefChoice(Game g) {
         while (true) {
             System.out.println();
-            System.out.println("CHEF - choose one task:");
-            System.out.println("  1) Cook one unit of an order");
-            System.out.println("  0) Wait");
-            Integer pick = readInt("> ");
+            System.out.println("  CHEF - choose one task");
+            System.out.println("    1) Cook one unit of an order");
+            System.out.println("    0) Wait");
+            Integer pick = readInt("  > ");
             if (pick == null) {
                 return ChefChoice.waitTurn(); // input ended
             }
             switch (pick) {
                 case 1 -> {
-                    System.out.println("To cook: " + orderList(g.getOrdersToCook()));
-                    Customer c = askCustomer(g, "Customer id (blank to go back): ");
+                    System.out.println("    To cook: " + orderList(g.getOrdersToCook()));
+                    Customer c = askCustomer(g, "    Customer id (blank to go back): ");
                     if (c == null) {
                         continue;
                     }
                     // ChefChoice(null) means "wait" to Game, so catch this here.
                     if (c.getOrder() == null) {
-                        System.out.println("Customer " + c.getId() + " has not ordered yet.");
+                        System.out.println("    Customer " + c.getId() + " has not ordered yet.");
                         continue;
                     }
                     return ChefChoice.cook(c.getOrder());
@@ -154,7 +190,7 @@ public class RestaurantCLI {
                 case 0 -> {
                     return ChefChoice.waitTurn();
                 }
-                default -> System.out.println("Please enter 0 or 1.");
+                default -> System.out.println("    Please enter 0 or 1.");
             }
         }
     }
@@ -171,7 +207,7 @@ public class RestaurantCLI {
         }
         while (true) {
             String toggle = explainHappyHour ? "h = hide this explanation" : "h = show the explanation";
-            System.out.print("Start Happy Hour on turn " + g.getTurn() + "? (y/n, " + toggle + ") > ");
+            System.out.print("  Start Happy Hour on turn " + g.getTurn() + "? (y/n, " + toggle + ") > ");
             if (!in.hasNextLine()) {
                 return false;
             }
@@ -188,92 +224,126 @@ public class RestaurantCLI {
                     if (explainHappyHour) {
                         printHappyHourExplanation();
                     } else {
-                        System.out.println("Explanation hidden. Enter h at this prompt to show it again.");
+                        System.out.println("  Explanation hidden. Enter h at this prompt to show it again.");
                     }
                 }
-                default -> System.out.println("Please enter y, n or h.");
+                default -> System.out.println("  Please enter y, n or h.");
             }
         }
     }
 
     private static void printHappyHourExplanation() {
-        System.out.println("HAPPY HOUR is available (once per game). If you start it now it lasts this");
-        System.out.println("turn and the next: orders taken get 20% off, and customers still waiting");
-        System.out.println("for a table or food recover 15 satisfaction at the start of each turn.");
+        System.out.println("  HAPPY HOUR is available (once per game). If you start it now it lasts");
+        System.out.println("  this turn and the next: orders taken get 20% off, and customers still");
+        System.out.println("  waiting for a table or food recover 15 satisfaction at each turn start.");
     }
 
     /** Called by Game when a staff action throws IllegalMoveException. */
     public void displayError(String reason) {
-        System.out.println("Not allowed: " + reason);
-        System.out.println("Choose again.");
-    }
- 
-    // ----------------------------------------------------------------- output
- 
-    public void displayTurnStart(Game g) {
         System.out.println();
-        System.out.println("=============== Turn " + g.getTurn() + " / " + g.getMaxTurns()
-                + " ===============");
-        System.out.println("Revenue: " + money(g.getRevenueCents()));
-        System.out.println("Reputation: " + g.getReputation());
-        displayHappyHour(g);
+        System.out.println("  ! Not allowed: " + reason);
+        System.out.println("    Choose again.");
+    }
 
+    // ----------------------------------------------------------------- output
+
+    public void displayTurnStart(Game g) {
+        if (!welcomed) {
+            welcomed = true;
+            displayWelcome(g);
+        }
+        System.out.println();
+        System.out.println(RULE);
+        System.out.println("  TURN " + g.getTurn() + " of " + g.getMaxTurns());
+        System.out.println(RULE);
+        announceArrivals(g);
+
+        System.out.println();
+        System.out.println("  Revenue " + money(g.getRevenueCents()) + "   |   Paid " + g.getPaidCount()
+                + "   |   Avg satisfaction " + average(g));
+        System.out.println("  Reputation " + g.getReputation() + "   |   Happy Hour " + happyHourStatus(g));
+
+        System.out.println();
+        System.out.println("  WAITING");
         List<Customer> waiting = g.getWaitingQueue();
         if (waiting.isEmpty()) {
-            System.out.println("Waiting: nobody");
-        } else {
-            StringJoiner sj = new StringJoiner(", ");
-            for (Customer c : waiting) {
-                sj.add(label(c) + " (satisfaction " + c.getSatisfaction() + ")");
-            }
-            System.out.println("Waiting: " + sj);
+            System.out.println("    nobody");
         }
- 
-        System.out.println("Tables:");
+        for (Customer c : waiting) {
+            System.out.printf("    %-13s satisfaction %d%n", label(c), c.getSatisfaction());
+        }
+
+        System.out.println();
+        System.out.println("  TABLES");
         for (Table t : g.getTables()) {
             Customer c = t.getCustomer();
             if (c == null) {
-                System.out.println("  Table " + t.getTableId() + ": free");
+                System.out.println("    Table " + t.getTableId() + "   free");
             } else {
-                String dish = c.getOrder() == null ? "" : ", " + c.getOrder().getItem().getName();
-                System.out.println("  Table " + t.getTableId() + ": " + label(c) + " "
-                        + c.getStatus() + dish + " (satisfaction " + c.getSatisfaction() + ")");
+                String dish = c.getOrder() == null ? "-" : c.getOrder().getItem().getName();
+                System.out.printf("    Table %d   %-13s %-13s %-21s satisfaction %d%n",
+                        t.getTableId(), label(c), c.getStatus(), dish, c.getSatisfaction());
             }
         }
- 
-        System.out.println("Kitchen:");
+
+        System.out.println();
+        System.out.println("  KITCHEN");
         boolean any = false;
         for (Order o : g.getOrders()) {
             if (o.getStatus() == OrderStatus.TAKEN) {
-                System.out.println("  " + label(o.getCustomer()) + " " + o.getItem().getName()
-                        + " - cooking " + o.getUnitsDone() + "/" + o.getItem().getPrepUnits());
+                System.out.printf("    %-13s %-21s cooking %d/%d%n", label(o.getCustomer()),
+                        o.getItem().getName(), o.getUnitsDone(), o.getItem().getPrepUnits());
                 any = true;
             } else if (o.getStatus() == OrderStatus.READY) {
                 String since = o.getReadyTurn() > 0 ? " (ready since turn " + o.getReadyTurn() + ")" : "";
-                System.out.println("  " + label(o.getCustomer()) + " " + o.getItem().getName()
-                        + " - READY to serve" + since);
+                System.out.printf("    %-13s %-21s READY to serve%s%n", label(o.getCustomer()),
+                        o.getItem().getName(), since);
                 any = true;
             }
         }
         if (!any) {
-            System.out.println("  (no open orders)");
+            System.out.println("    no open orders");
         }
-    }
- 
-    public void displayTurnEnd(Game g) {
-        System.out.println("--- End of turn " + g.getTurn() + ": revenue " + money(g.getRevenueCents())
-                + ", paid " + g.getPaidCount() + ", left " + g.getUnhappyDepartures()
-                + ", reputation " + g.getReputation() + " ---");
+
+        System.out.println();
+        System.out.println("  WHAT YOUR STAFF CAN DO");
+        System.out.println("    Host     " + hostTasks(g));
+        System.out.println("    Waiter   " + waiterTasks(g));
+        System.out.println("    Chef     " + chefTasks(g));
+        System.out.println(THIN);
     }
 
-    /** Start-of-turn status line; Game also calls it right after Happy Hour starts. */
+    public void displayTurnEnd(Game g) {
+        System.out.println();
+        System.out.println(THIN);
+        System.out.println("  END OF TURN " + g.getTurn() + " of " + g.getMaxTurns());
+        System.out.println("  Revenue " + money(g.getRevenueCents()) + "   |   Served " + g.getServedCount()
+                + "   |   Paid " + g.getPaidCount() + "   |   Left unhappy " + g.getUnhappyDepartures());
+        System.out.println("  Avg satisfaction " + average(g) + "   |   Reputation " + g.getReputation()
+                + "   |   Turns used " + g.getTurn() + " of " + g.getMaxTurns());
+        System.out.println(THIN);
+    }
+
+    /** Game calls it right after Happy Hour starts. */
     public void displayHappyHour(Game g) {
-        System.out.println("Happy Hour: " + happyHourStatus(g));
+        System.out.println("  Happy Hour: " + happyHourStatus(g));
+    }
+
+    /** Called by Game when a served customer gives a rating (only the Critic does). */
+    public void displayReview(Customer c, Rating rating, Reputation reputation) {
+        String effect = switch (reputation) {
+            case GOOD -> "waiting customers lose 2 less per turn";
+            case BAD -> "waiting customers lose 2 more per turn";
+            case NEUTRAL -> "waiting customers lose the normal amount";
+        };
+        System.out.println();
+        System.out.println("  REVIEW: " + label(c) + " rates the service " + rating + ".");
+        System.out.println("    Reputation is now " + reputation + ": " + effect + ".");
     }
 
     /** Called by Game for each customer who recovers during Happy Hour. */
     public void displayRecovery(Customer c, int newValue) {
-        System.out.println("Happy Hour: " + label(c) + " recovers to satisfaction " + newValue);
+        System.out.println("  Happy Hour: " + label(c) + " recovers to satisfaction " + newValue);
     }
 
     private static String happyHourStatus(Game g) {
@@ -284,22 +354,87 @@ public class RestaurantCLI {
         }
         return hh.isUsed() ? "used" : "available";
     }
- 
+
     public void displayResult(Game g) {
         System.out.println();
-        System.out.println("================ GAME OVER ================");
-        System.out.println("Revenue:            " + money(g.getRevenueCents()));
-        System.out.println("Customers served:   " + g.getServedCount());
-        System.out.println("Customers paid:     " + g.getPaidCount());
-        System.out.println("Customers who left: " + g.getUnhappyDepartures());
-        OptionalDouble avg = g.averageSatisfaction();
-        System.out.println("Avg satisfaction:   "
-                + (avg.isPresent() ? String.format("%.1f", avg.getAsDouble()) : "n/a (nobody paid)"));
-        System.out.println(g.isVictory() ? "RESULT: VICTORY!" : "RESULT: DEFEAT");
+        System.out.println(RULE);
+        System.out.println("  GAME OVER");
+        System.out.println(RULE);
+        System.out.println("  Revenue:            " + money(g.getRevenueCents()));
+        System.out.println("  Customers served:   " + g.getServedCount());
+        System.out.println("  Customers paid:     " + g.getPaidCount());
+        System.out.println("  Customers who left: " + g.getUnhappyDepartures());
+        System.out.println("  Avg satisfaction:   " + average(g));
+        System.out.println();
+        System.out.println(g.isVictory() ? "  RESULT: VICTORY!" : "  RESULT: DEFEAT");
+        System.out.println(RULE);
     }
- 
+
+    // ------------------------------------------------------- arrivals and help
+
+    /** Shown once before the first turn: the goal, what each staff member does, and the menu. */
+    private void displayWelcome(Game g) {
+        System.out.println();
+        System.out.println(RULE);
+        System.out.println("  WELCOME TO RESTAURANT RUSH");
+        System.out.println(RULE);
+        System.out.println();
+        System.out.println("  You run the restaurant for " + g.getMaxTurns() + " turns. To win, after the last turn");
+        System.out.println("  you need at least 4 paying customers, $45.00 in revenue, and an");
+        System.out.println("  average satisfaction of 60 or more among the customers who paid.");
+        System.out.println("  Customers waiting for a table or food lose satisfaction every turn,");
+        System.out.println("  and leave without paying if it reaches 0.");
+        System.out.println();
+        System.out.println("  STAFF (each does at most one task per turn)");
+        System.out.println("    Host      seats one waiting customer, before the Waiter acts");
+        System.out.println("    Waiter    seats a customer, takes an order, or serves a READY dish");
+        System.out.println("    Chef      cooks one prep unit of one order");
+        System.out.println("    Cashier   works by itself: one payment per turn, oldest first");
+        System.out.println();
+        System.out.println("  MENU (customers choose their own food)");
+        for (MenuItem m : g.getMenu().getItems()) {
+            System.out.printf("    %-21s %7s   %d prep unit(s)%n",
+                    m.getName(), money(m.getPriceCents()), m.getPrepUnits());
+        }
+        System.out.println("    A combo costs 90% of its two dishes and takes both dishes' prep units.");
+        System.out.println();
+        pause();
+    }
+
+    /** Announces each newcomer once; the first VIP and the first Critic are also explained. */
+    private void announceArrivals(Game g) {
+        for (Customer c : g.getCustomers()) {
+            if (announced.add(c.getId())) {
+                System.out.println();
+                System.out.println("  New arrival: " + label(c) + " joins the waiting queue.");
+                List<String> intro = INTRODUCTIONS.get(typeName(c));
+                if (intro != null && introduced.add(typeName(c))) {
+                    explain(intro);
+                }
+            }
+        }
+    }
+
+    // the whole explanation at once, then one Enter
+    private void explain(List<String> lines) {
+        for (String line : lines) {
+            System.out.println();
+            System.out.println("  " + line);
+        }
+        System.out.println();
+        pause();
+    }
+
+    /** Waits for Enter so the player can read an explanation. Scripted runs override it. */
+    protected void pause() {
+        System.out.print("    < press Enter to continue >");
+        if (in.hasNextLine()) {
+            in.nextLine();
+        }
+    }
+
     // ---------------------------------------------------------------- helpers
- 
+
     /** Reads one whole number; re-prompts on bad input. Returns null if input has ended. */
     private Integer readInt(String prompt) {
         while (true) {
@@ -311,11 +446,11 @@ public class RestaurantCLI {
             try {
                 return Integer.parseInt(line);
             } catch (NumberFormatException e) {
-                System.out.println("Please enter a whole number.");
+                System.out.println("    Please enter a whole number.");
             }
         }
     }
- 
+
     /** Like readInt, but a blank line means "go back" and returns null. Accepts "c3" or "3". */
     private Integer readIdOrBlank(String prompt) {
         while (true) {
@@ -333,11 +468,11 @@ public class RestaurantCLI {
             try {
                 return Integer.parseInt(line);
             } catch (NumberFormatException e) {
-                System.out.println("Please enter a number, or leave blank to go back.");
+                System.out.println("    Please enter a number, or leave blank to go back.");
             }
         }
     }
- 
+
     private Table askTable(Game g, String prompt) {
         while (true) {
             Integer id = readIdOrBlank(prompt);
@@ -349,10 +484,10 @@ public class RestaurantCLI {
                     return t;
                 }
             }
-            System.out.println("There is no table " + id + ".");
+            System.out.println("    There is no table " + id + ".");
         }
     }
- 
+
     private Customer askCustomer(Game g, String prompt) {
         while (true) {
             Integer id = readIdOrBlank(prompt);
@@ -364,10 +499,41 @@ public class RestaurantCLI {
                     return c;
                 }
             }
-            System.out.println("There is no customer " + id + ".");
+            System.out.println("    There is no customer " + id + ".");
         }
     }
- 
+
+    // the lists come from Game, so the CLI only words them
+    private static String hostTasks(Game g) {
+        if (g.getWaitingQueue().isEmpty() || g.getFreeTables().isEmpty()) {
+            return "nothing to do (nobody waiting or no free table)";
+        }
+        return "seat " + customerIds(g.getWaitingQueue()) + " (free tables: " + tableIds(g.getFreeTables()) + ")";
+    }
+
+    private static String waiterTasks(Game g) {
+        List<String> tasks = new ArrayList<>();
+        if (!g.getWaitingQueue().isEmpty() && !g.getFreeTables().isEmpty()) {
+            tasks.add("seat (like the Host)");
+        }
+        if (!g.getCustomersToOrder().isEmpty()) {
+            tasks.add("take order from " + customerIds(g.getCustomersToOrder()));
+        }
+        if (!g.getOrdersToServe().isEmpty()) {
+            tasks.add("serve " + orderList(g.getOrdersToServe()));
+        }
+        return tasks.isEmpty() ? "nothing to do" : String.join("; ", tasks);
+    }
+
+    private static String chefTasks(Game g) {
+        return g.getOrdersToCook().isEmpty() ? "nothing to cook" : "cook " + orderList(g.getOrdersToCook());
+    }
+
+    private static String average(Game g) {
+        OptionalDouble avg = g.averageSatisfaction();
+        return avg.isPresent() ? String.format("%.1f", avg.getAsDouble()) : "N/A";
+    }
+
     private static String customerIds(List<Customer> list) {
         StringJoiner sj = new StringJoiner(", ");
         for (Customer c : list) {
@@ -375,20 +541,22 @@ public class RestaurantCLI {
         }
         return sj.length() == 0 ? "none" : sj.toString();
     }
- 
+
     /**
      * "c2 VIP", "c3 Critic", "c1 Regular". Display only: the type comes from
      * the subclass name (VIPCustomer -> VIP), so a new customer type shows up
      * here with no change to the CLI. If Customer has no subtype yet, just "c1".
      */
     private static String label(Customer c) {
-        String type = c.getClass().getSimpleName();
-        if (type.endsWith("Customer")) {
-            type = type.substring(0, type.length() - "Customer".length());
-        }
+        String type = typeName(c);
         return type.isEmpty() ? "c" + c.getId() : "c" + c.getId() + " " + type;
     }
- 
+
+    private static String typeName(Customer c) {
+        String type = c.getClass().getSimpleName();
+        return type.endsWith("Customer") ? type.substring(0, type.length() - "Customer".length()) : type;
+    }
+
     private static String tableIds(List<Table> list) {
         StringJoiner sj = new StringJoiner(", ");
         for (Table t : list) {
@@ -396,7 +564,7 @@ public class RestaurantCLI {
         }
         return sj.length() == 0 ? "none" : sj.toString();
     }
- 
+
     private static String orderList(List<Order> list) {
         StringJoiner sj = new StringJoiner(", ");
         for (Order o : list) {
@@ -404,7 +572,7 @@ public class RestaurantCLI {
         }
         return sj.length() == 0 ? "none" : sj.toString();
     }
- 
+
     private static String money(int cents) {
         return String.format("$%d.%02d", cents / 100, cents % 100);
     }
