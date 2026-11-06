@@ -58,13 +58,14 @@ public class RestaurantCLI {
                     "A GOOD review gives the restaurant a GOOD reputation: from then on every"
                             + "\n  waiting customer loses 2 less satisfaction per turn.",
                     "A BAD review gives a BAD reputation: every waiting customer loses 2 more"
-                            + "\n  per turn. A NEUTRAL review leaves the reputation unchanged.",
+                            + "\n  per turn. A NEUTRAL review sets the reputation back to NEUTRAL.",
                     "Tip: serve the critic's dish on the turn after it becomes READY."));
 
     private final Scanner in;
     // display preference only: the manager can hide or show the Happy Hour explanation
     private boolean explainHappyHour = true;
-    // display memory only: who has been announced, which types have been explained
+    // display memory only: welcome shown, who has been announced, which types have been explained
+    private boolean welcomed = false;
     private final Set<Integer> announced = new HashSet<>();
     private final Set<String> introduced = new HashSet<>();
 
@@ -247,6 +248,10 @@ public class RestaurantCLI {
     // ----------------------------------------------------------------- output
 
     public void displayTurnStart(Game g) {
+        if (!welcomed) {
+            welcomed = true;
+            displayWelcome(g);
+        }
         System.out.println();
         System.out.println(RULE);
         System.out.println("  TURN " + g.getTurn() + " of " + g.getMaxTurns());
@@ -324,6 +329,18 @@ public class RestaurantCLI {
         System.out.println("  Happy Hour: " + happyHourStatus(g));
     }
 
+    /** Called by Game when a served customer gives a rating (only the Critic does). */
+    public void displayReview(Customer c, Rating rating, Reputation reputation) {
+        String effect = switch (reputation) {
+            case GOOD -> "waiting customers lose 2 less per turn";
+            case BAD -> "waiting customers lose 2 more per turn";
+            case NEUTRAL -> "waiting customers lose the normal amount";
+        };
+        System.out.println();
+        System.out.println("  REVIEW: " + label(c) + " rates the service " + rating + ".");
+        System.out.println("    Reputation is now " + reputation + ": " + effect + ".");
+    }
+
     /** Called by Game for each customer who recovers during Happy Hour. */
     public void displayRecovery(Customer c, int newValue) {
         System.out.println("  Happy Hour: " + label(c) + " recovers to satisfaction " + newValue);
@@ -354,6 +371,35 @@ public class RestaurantCLI {
     }
 
     // ------------------------------------------------------- arrivals and help
+
+    /** Shown once before the first turn: the goal, what each staff member does, and the menu. */
+    private void displayWelcome(Game g) {
+        System.out.println();
+        System.out.println(RULE);
+        System.out.println("  WELCOME TO RESTAURANT RUSH");
+        System.out.println(RULE);
+        System.out.println();
+        System.out.println("  You run the restaurant for " + g.getMaxTurns() + " turns. To win, after the last turn");
+        System.out.println("  you need at least 4 paying customers, $45.00 in revenue, and an");
+        System.out.println("  average satisfaction of 60 or more among the customers who paid.");
+        System.out.println("  Customers waiting for a table or food lose satisfaction every turn,");
+        System.out.println("  and leave without paying if it reaches 0.");
+        System.out.println();
+        System.out.println("  STAFF (each does at most one task per turn)");
+        System.out.println("    Host      seats one waiting customer, before the Waiter acts");
+        System.out.println("    Waiter    seats a customer, takes an order, or serves a READY dish");
+        System.out.println("    Chef      cooks one prep unit of one order");
+        System.out.println("    Cashier   works by itself: one payment per turn, oldest first");
+        System.out.println();
+        System.out.println("  MENU (customers choose their own food)");
+        for (MenuItem m : g.getMenu().getItems()) {
+            System.out.printf("    %-21s %7s   %d prep unit(s)%n",
+                    m.getName(), money(m.getPriceCents()), m.getPrepUnits());
+        }
+        System.out.println("    A combo costs 90% of its two dishes and takes both dishes' prep units.");
+        System.out.println();
+        pause();
+    }
 
     /** Announces each newcomer once; the first VIP and the first Critic are also explained. */
     private void announceArrivals(Game g) {
